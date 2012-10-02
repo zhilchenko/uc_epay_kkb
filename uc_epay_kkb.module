@@ -26,11 +26,68 @@ function uc_epay_kkb_payment_method() {
     'name' => t('Credit card (ePay.kkb.kz)'),
     'title' => t('Credit card (ePay)'),
     'description' => t('Redirect to ePay.kkb.kz to pay by credit card.'),
+    'callback' => 'uc_epay_kkb_payment_method_callback',
     'weight' => 1,
     'checkout' => TRUE,
     'no_gateway' => TRUE,
   );
   return $methods;
+}
+
+/**
+ * Add ePay.kkb.kz settings to the payment method settings form.
+ *
+ * @see uc_epay_kkb_payment_method()
+ */
+function uc_epay_kkb_payment_method_callback($op, &$arg1) {
+  switch ($op) {
+    case 'settings':
+      // Check keys
+      uc_epay_kkb_check_cert_files();
+
+      $form['api_url']['uc_epay_kkb_gateway_url'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Gateway URL'),
+        '#default_value' => variable_get('uc_epay_kkb_gateway_url', UC_EPAY_KKB_PROD_GATEWAY_URL),
+        '#required' => TRUE,
+      );
+
+      $form['merchant'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Merchant Information'),
+      );
+      $form['merchant']['uc_epay_kkb_merchant_id'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Merchant ID'),
+        '#default_value' => variable_get('uc_epay_kkb_merchant_id', ''),
+        '#required' => TRUE,
+      );
+      $form['merchant']['uc_epay_kkb_merchant_name'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Shop/merchant name'),
+        '#default_value' => variable_get('uc_epay_kkb_merchant_name', ''),
+        '#required' => TRUE,
+      );
+      $form['merchant']['uc_epay_kkb_merchant_certificate_id'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Certificate serial number'),
+        '#default_value' => variable_get('uc_epay_kkb_merchant_certificate_id', ''),
+        '#required' => TRUE,
+      );
+
+      $form['keys'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Keys'),
+      );
+      $form['keys']['uc_epay_kkb_private_key_pass'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Merchant private key password'),
+        '#default_value' => variable_get('uc_epay_kkb_private_key_pass', ''),
+        '#required' => TRUE,
+      );
+
+      return $form;
+  }
 }
 
 
@@ -111,4 +168,26 @@ function uc_epay_kkb_test_file_readable_remotely($path, $contents) {
     return TRUE;
   }
   return FALSE;
+}
+
+/**
+ * Check certificate files.
+ *
+ * @return TRUE in certificate files is ok
+ */
+function uc_epay_kkb_check_cert_files() {
+  $result = TRUE;
+  if (!file_exists(UC_EPAY_KKB_CERT_DIR . '/' . UC_EPAY_KKB_BANK_CERT_FILENAME)){
+    $message = t("uc_epay_kkb was unable to find bank public key %cert. Please, place it in %dir.",
+                  array('%cert' => UC_EPAY_KKB_BANK_CERT_FILENAME, '%dir' => UC_EPAY_KKB_CERT_DIR));
+    drupal_set_message($message, 'error');
+    $result = FALSE;
+  }
+  if (!file_exists(UC_EPAY_KKB_CERT_DIR . '/' . UC_EPAY_KKB_MERCH_CERT_FILENAME)) {
+    $message = t("uc_epay_kkb was unable to find private merchant key %cert. Please, place it in %dir.",
+                  array('%cert' => UC_EPAY_KKB_MERCH_CERT_FILENAME, '%dir' => UC_EPAY_KKB_CERT_DIR));
+    drupal_set_message($message, 'error');
+    $result = FALSE;
+  }
+  return $result;
 }
