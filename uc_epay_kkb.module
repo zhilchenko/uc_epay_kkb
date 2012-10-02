@@ -7,8 +7,8 @@
 
 // Define key storage direcroty path and keys filenames
 define('UC_EPAY_KKB_CERT_DIR', $_SERVER['DOCUMENT_ROOT'] . base_path() . file_directory_path() . '/uc_epay_kkb');
-define('UC_EPAY_KKB_BANK_CERT_FILENAME', 'kkbca.pem');
-define('UC_EPAY_KKB_MERCH_CERT_FILENAME', 'merch.pem');
+define('UC_EPAY_KKB_BANK_CERT_FILENAME', UC_EPAY_KKB_CERT_DIR . '/' . 'kkbca.pem');
+define('UC_EPAY_KKB_MERCH_CERT_FILENAME', UC_EPAY_KKB_CERT_DIR . '/' . 'merch.pem');
 
 // Define default test and production URLs
 define('UC_EPAY_KKB_TEST_GATEWAY_URL', 'https://3dsecure.kkb.kz/jsp/process/logon.jsp');
@@ -204,13 +204,13 @@ function uc_epay_kkb_test_file_readable_remotely($path, $contents) {
  */
 function uc_epay_kkb_check_cert_files() {
   $result = TRUE;
-  if (!file_exists(UC_EPAY_KKB_CERT_DIR . '/' . UC_EPAY_KKB_BANK_CERT_FILENAME)){
+  if (!file_exists(UC_EPAY_KKB_BANK_CERT_FILENAME)){
     $message = t("uc_epay_kkb was unable to find bank public key %cert. Please, place it in %dir.",
                   array('%cert' => UC_EPAY_KKB_BANK_CERT_FILENAME, '%dir' => UC_EPAY_KKB_CERT_DIR));
     drupal_set_message($message, 'error');
     $result = FALSE;
   }
-  if (!file_exists(UC_EPAY_KKB_CERT_DIR . '/' . UC_EPAY_KKB_MERCH_CERT_FILENAME)) {
+  if (!file_exists(UC_EPAY_KKB_MERCH_CERT_FILENAME)) {
     $message = t("uc_epay_kkb was unable to find private merchant key %cert. Please, place it in %dir.",
                   array('%cert' => UC_EPAY_KKB_MERCH_CERT_FILENAME, '%dir' => UC_EPAY_KKB_CERT_DIR));
     drupal_set_message($message, 'error');
