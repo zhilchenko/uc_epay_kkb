@@ -60,13 +60,15 @@ function uc_epay_kkb_payment_method_callback($op, &$arg1) {
       // Check keys
       uc_epay_kkb_check_cert_files();
 
-      $form['api_url']['uc_epay_kkb_gateway_url'] = array(
+      $form['uc_epay_kkb_gateway_url'] = array(
         '#type' => 'textfield',
         '#title' => t('Gateway URL'),
-        '#default_value' => variable_get('uc_epay_kkb_gateway_url', UC_EPAY_KKB_PROD_GATEWAY_URL),
+        '#description' => t('When you are ready set URL to %live_url', array('%live_url' => UC_EPAY_KKB_PROD_GATEWAY_URL)),
+        '#default_value' => variable_get('uc_epay_kkb_gateway_url', UC_EPAY_KKB_TEST_GATEWAY_URL),
         '#required' => TRUE,
       );
 
+      // Default variable values for testing (from epay documentation)
       $form['merchant'] = array(
         '#type' => 'fieldset',
         '#title' => t('Merchant Information'),
@@ -74,19 +76,19 @@ function uc_epay_kkb_payment_method_callback($op, &$arg1) {
       $form['merchant']['uc_epay_kkb_merchant_id'] = array(
         '#type' => 'textfield',
         '#title' => t('Merchant ID'),
-        '#default_value' => variable_get('uc_epay_kkb_merchant_id', ''),
+        '#default_value' => variable_get('uc_epay_kkb_merchant_id', '92061101'),
         '#required' => TRUE,
       );
       $form['merchant']['uc_epay_kkb_merchant_name'] = array(
         '#type' => 'textfield',
         '#title' => t('Shop/merchant name'),
-        '#default_value' => variable_get('uc_epay_kkb_merchant_name', ''),
+        '#default_value' => variable_get('uc_epay_kkb_merchant_name', 'Test shop'),
         '#required' => TRUE,
       );
       $form['merchant']['uc_epay_kkb_merchant_certificate_id'] = array(
         '#type' => 'textfield',
         '#title' => t('Certificate serial number'),
-        '#default_value' => variable_get('uc_epay_kkb_merchant_certificate_id', ''),
+        '#default_value' => variable_get('uc_epay_kkb_merchant_certificate_id', '00C182B189'),
         '#required' => TRUE,
       );
 
@@ -97,7 +99,7 @@ function uc_epay_kkb_payment_method_callback($op, &$arg1) {
       $form['keys']['uc_epay_kkb_private_key_pass'] = array(
         '#type' => 'textfield',
         '#title' => t('Merchant private key password'),
-        '#default_value' => variable_get('uc_epay_kkb_private_key_pass', ''),
+        '#default_value' => variable_get('uc_epay_kkb_private_key_pass', 'nissan'),
         '#required' => TRUE,
       );
 
