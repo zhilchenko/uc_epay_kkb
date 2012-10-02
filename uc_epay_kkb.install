@@ -1,0 +1,23 @@
+<?php
+
+/**
+ * @file
+ * Install hooks for uc_epay_kkb.module.
+ */
+
+/**
+ * Implementation of hook_install().
+ */
+function uc_epay_kkb_install() {
+  module_load_include('module', 'uc_epay_kkb');
+  // Prepare certificate directory
+  uc_epay_kkb_check_web_dir(UC_EPAY_KKB_CERT_DIR);
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function uc_epay_kkb_uninstall() {
+  // Delete related variables all at once.
+  db_query("DELETE FROM {variable} WHERE name LIKE 'uc_epay_kkb_%%'");
+}

@@ -1,0 +1,114 @@
+<?php
+
+/**
+ * @file
+ * Ubercart Payment method for epay.kkb.kz
+ */
+
+// Define key storage direcroty path and keys filenames
+define('UC_EPAY_KKB_CERT_DIR', $_SERVER['DOCUMENT_ROOT'] . base_path() . file_directory_path() . '/uc_epay_kkb');
+define('UC_EPAY_KKB_BANK_CERT_FILENAME', 'kkbca.pem');
+define('UC_EPAY_KKB_MERCH_CERT_FILENAME', 'merch.pem');
+
+// Define default test and production URLs
+define('UC_EPAY_KKB_TEST_GATEWAY_URL', 'https://3dsecure.kkb.kz/jsp/process/logon.jsp');
+define('UC_EPAY_KKB_PROD_GATEWAY_URL', 'https://epay.kkb.kz/jsp/process/logon.jsp');
+
+
+/**
+ * Implementation of hook_payment_method().
+ *
+ * Exposes epay.kkb.kz to Ubercart.
+ */
+function uc_epay_kkb_payment_method() {
+  $methods[] = array(
+    'id' => 'epay_kkb',
+    'name' => t('Credit card (ePay.kkb.kz)'),
+    'title' => t('Credit card (ePay)'),
+    'description' => t('Redirect to ePay.kkb.kz to pay by credit card.'),
+    'weight' => 1,
+    'checkout' => TRUE,
+    'no_gateway' => TRUE,
+  );
+  return $methods;
+}
+
+
+/*******************************************************************************
+ * Module and Helper Functions
+ ******************************************************************************/
+
+/**
+ * Check that a web accessible directory is exist and has been properly secured,
+ * othewise attempt to secure it.
+ *
+ * Code from backup_mirgate module.
+ */
+function uc_epay_kkb_check_web_dir($directory) {
+  // Check directory is existed
+  if (!file_check_directory($directory, FILE_CREATE_DIRECTORY)) {
+    $message = t("uc_epay_kkb was unable to create directory %directory. Please, create it by hand.",
+                 array('%directory' => $directory));
+    drupal_set_message($message, 'error');
+    return FALSE;
+  }
+  // Check for a htaccess file which adequately protects the files.
+  $htaccess_lines = "order allow,deny\ndeny from all\n";
+  if (!is_file($directory .'/.htaccess') || !is_readable($directory .'/.htaccess') || strpos(file_get_contents($directory .'/.htaccess'), $htaccess_lines) === FALSE) {
+    // Attempt to protect files from public access using htaccess.
+    if (($fp = @fopen($directory .'/.htaccess', 'w')) && @fputs($fp, $htaccess_lines)) {
+      fclose($fp);
+      chmod($directory .'/.htaccess', 0664);
+    }
+    // Unable to create htaccess... warn the user.
+    else {
+      $message = "Security warning: Couldn't modify .htaccess file. Please create a .htaccess file in your %directory directory which contains the following lines: <code>!htaccess</code> or add them to the existing .htaccess file";
+      $replace = array('%directory' => $directory, '!htaccess' => '<br />'. nl2br(check_plain($htaccess_lines)));
+      drupal_set_message($message, 'error');
+      return FALSE;
+    }
+  }
+
+  // Check the user agent to make sure we're not responding to a request from drupal itself.
+  // That should prevent infinite loops which could be caused by poormanscron in some circumstances.
+  if (strpos($_SERVER['HTTP_USER_AGENT'], 'Drupal') !== FALSE) {
+    return FALSE;
+  }
+
+  // Check to see if the destination is publicly accessible
+  $test_contents = "this file should not be publicly accessible";
+  // Create the the text.txt file if it's not already there.
+  if (!is_file($directory .'/test.txt') || file_get_contents($directory .'/test.txt') != $test_contents) {
+    if ($fp = fopen($directory .'/test.txt', 'w')) {
+      @fputs($fp, $test_contents);
+      fclose($fp);
+    }
+    else {
+      $message = t("Security notice: uc_epay_kkb was unable to write a test text file to the destination directory %directory, and is therefore unable to check the security of it.", array('%directory' => $directory));
+      drupal_set_message($message, 'error');
+      return FALSE;
+    }
+  }
+
+  // Attempt to read the test file via http. This may fail for other reasons,
+  // so it's not a bullet-proof check.
+  $path = trim(drupal_substr($directory .'/test.txt', drupal_strlen(file_directory_path())), '\\/');
+  if (uc_epay_kkb_test_file_readable_remotely($path, $test_contents)) {
+    $message = t("Security notice: uc_epay_kkb will not save certificate files to the server because the destination directory is publicly accessible. If you want to save files to the server, please secure the '%directory' directory", array('%directory' => $directory));
+    drupal_set_message($message, 'error');
+    return FALSE;
+  }
+  return $directory;
+}
+
+/**
+ * Check if a file can be read remotely via http.
+ */
+function uc_epay_kkb_test_file_readable_remotely($path, $contents) {
+  $url = $GLOBALS['base_url'] .'/'. file_directory_path() .'/'. str_replace('\\', '/', $path);
+  $result = drupal_http_request($url);
+  if (!empty($result->data) && strpos($result->data, $contents) !== FALSE) {
+    return TRUE;
+  }
+  return FALSE;
+}
