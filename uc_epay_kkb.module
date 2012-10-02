@@ -35,6 +35,21 @@ function uc_epay_kkb_payment_method() {
 }
 
 /**
+ * Implements hook_form_alter().
+ */
+function uc_epay_kkb_form_alter(&$form, $form_state, $form_id) {
+  if ($form_id == 'uc_cart_checkout_review_form' && ($order_id = intval($_SESSION['cart_order'])) > 0) {
+    $order = uc_order_load($order_id);
+
+    if ($order->payment_method == 'epay_kkb') {
+      unset($form['submit']);
+      $form['#prefix'] = '<table id="epay-kkb-review-table"><tr><td>';
+      $form['#suffix'] = '</td><td>'. drupal_get_form('uc_epay_kkb_form', $order) .'</td></tr></table>';
+    }
+  }
+}
+
+/**
  * Add ePay.kkb.kz settings to the payment method settings form.
  *
  * @see uc_epay_kkb_payment_method()
@@ -88,6 +103,18 @@ function uc_epay_kkb_payment_method_callback($op, &$arg1) {
 
       return $form;
   }
+}
+
+/**
+ * Form to build the submission to epay.kkb.kz.
+ */
+function uc_epay_kkb_form($form_state, $order) {
+  $form['#action'] = variable_get('uc_epay_kkb_gateway_url', UC_EPAY_KKB_PROD_GATEWAY_URL);
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Submit Order'),
+  );
+  return $form;
 }
 
 
