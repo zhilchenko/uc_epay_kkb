@@ -14,6 +14,8 @@ define('UC_EPAY_KKB_MERCH_CERT_FILENAME', UC_EPAY_KKB_CERT_DIR . '/' . 'merch.pe
 define('UC_EPAY_KKB_TEST_GATEWAY_URL', 'https://3dsecure.kkb.kz/jsp/process/logon.jsp');
 define('UC_EPAY_KKB_PROD_GATEWAY_URL', 'https://epay.kkb.kz/jsp/process/logon.jsp');
 
+define('UC_EPAY_METHOD_ID', 'epay_kkb');
+
 
 /**
  * Implementation of hook_payment_method().
@@ -22,7 +24,7 @@ define('UC_EPAY_KKB_PROD_GATEWAY_URL', 'https://epay.kkb.kz/jsp/process/logon.js
  */
 function uc_epay_kkb_payment_method() {
   $methods[] = array(
-    'id' => 'epay_kkb',
+    'id' => UC_EPAY_METHOD_ID,
     'name' => t('Credit card (ePay.kkb.kz)'),
     'title' => t('Credit card (ePay)'),
     'description' => t('Redirect to ePay.kkb.kz to pay by credit card.'),
@@ -41,7 +43,7 @@ function uc_epay_kkb_form_alter(&$form, $form_state, $form_id) {
   if ($form_id == 'uc_cart_checkout_review_form' && ($order_id = intval($_SESSION['cart_order'])) > 0) {
     $order = uc_order_load($order_id);
 
-    if ($order->payment_method == 'epay_kkb') {
+    if ($order->payment_method == UC_EPAY_METHOD_ID) {
       unset($form['submit']);
       $form['#prefix'] = '<table id="epay-kkb-review-table"><tr><td>';
       $form['#suffix'] = '</td><td>'. drupal_get_form('uc_epay_kkb_form', $order) .'</td></tr></table>';
