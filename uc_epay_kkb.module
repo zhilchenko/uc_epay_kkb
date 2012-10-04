@@ -117,7 +117,7 @@ function uc_epay_kkb_form($form_state, $order) {
   $order_id = sprintf ("%06d", $order->order_id);
 
   // Load merchant private key
-  $password = variable_get('uc_epay_kkb_private_key_pass', '');
+  $password = variable_get('uc_epay_kkb_private_key_pass', 'nissan');
   if (!($prvkey = uc_epay_kkb_load_private_key(UC_EPAY_KKB_MERCH_CERT_FILENAME, $password))) {
     return FALSE;
   }
