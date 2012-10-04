@@ -37,6 +37,30 @@ function uc_epay_kkb_payment_method() {
 }
 
 /**
+ * Implements hook_menu().
+ */
+function uc_epay_kkb_menu() {
+  $items = array();
+
+  // Bank response page
+  $items['cart/epaykkb/postlink'] = array(
+    'title' => 'Order payment',
+    'page callback' => 'uc_epay_kkb_postlink',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+  // Order complete page
+  $items['cart/epaykkb/backlink'] = array(
+    'title' => 'Order complete',
+    'page callback' => 'uc_epay_kkb_backlink',
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+/**
  * Implements hook_form_alter().
  */
 function uc_epay_kkb_form_alter(&$form, $form_state, $form_id) {
@@ -159,11 +183,11 @@ function uc_epay_kkb_form($form_state, $order) {
   );
   $form['BackLink'] = array(
     '#type' => 'hidden',
-    '#default_value' => url('cart/checkout/review', array('absolute' => TRUE)),
+    '#default_value' => url('cart/epaykkb/backlink/' . $order->order_id, array('absolute' => TRUE)),
   );
   $form['PostLink'] = array(
     '#type' => 'hidden',
-    '#default_value' => url('cart/epaykkb/complete/'. uc_cart_get_id(), array('absolute' => TRUE)),
+    '#default_value' => url('cart/epaykkb/postlink', array('absolute' => TRUE)),
   );
 
   $form['#action'] = variable_get('uc_epay_kkb_gateway_url', UC_EPAY_KKB_TEST_GATEWAY_URL);
@@ -172,6 +196,80 @@ function uc_epay_kkb_form($form_state, $order) {
     '#value' => t('Process payment'),
   );
   return $form;
+}
+
+/**
+ * Menu callback for bank response page.
+ * Check payment, set order status.
+ */
+function uc_epay_kkb_postlink() {
+
+  // If it's not a bank request
+  if (!isset($_POST['response'])) {
+    return MENU_ACCESS_DENIED;
+  }
+
+  $response_raw = stripslashes($_POST['response']);
+
+  // Create SimpleXML object from response data
+  $response = simplexml_load_string($response_raw);
+
+  $order_id = (int) $response->bank->customer->merchant->order->attributes()->order_id;
+
+  // Get, decode, revert and check bank signature
+  $raw_sign = uc_epay_kkb_split_sign($response_raw);
+  $sign = strrev(base64_decode($raw_sign['RAWSIGN']));
+  if (!uc_epay_kkb_check_sign($raw_sign['LETTER'], $sign)) {
+    watchdog('epay.kkb.kz', 'Payment receiving error for order %order_id. Bank signature dont match.',
+             array('%order_id' => $order_id), WATCHDOG_ERROR);
+    uc_order_comment_save($order_id, 0, t('Attempted unverified epay.kkb.kz completion for this order.'), 'admin');
+    return MENU_ACCESS_DENIED;
+  }
+
+  // Load order object
+  if (($order = uc_order_load($order_id)) === FALSE) {
+    watchdog('epay.kkb.kz', 'Receiving payment notification for order %order_id, but order not found.',
+           array('%order_id' => $order_id), WATCHDOG_ERROR);
+    return MENU_NOT_FOUND;
+  }
+
+  watchdog('epay.kkb.kz', 'Receiving payment notification for order %order_id.',
+         array('%order_id' => $order_id), WATCHDOG_INFO);
+
+  // Check email entered by user at payment gateway page
+  $entered_email = (string) $response->bank->customer->attributes()->mail;
+  if (strtolower($entered_email) !== strtolower($order->primary_email)) {
+    uc_order_comment_save($order_id, 0, t('Customer used a different e-mail address during payment: %email',
+                                          array('%email' => check_plain($entered_email))), 'admin');
+  }
+
+  // Add payment to order
+  $comment = t('Paid by epay.kkb.kz.');
+  $amount = (int) $response->bank->customer->merchant->order->attributes()->amount;
+  uc_payment_enter($order_id, UC_EPAY_METHOD_ID, $amount, 0, NULL, $comment);
+
+  return TRUE;
+}
+
+/**
+ * Finish order registration.
+ */
+function uc_epay_kkb_backlink($order_id = NULL) {
+  // If order not found or payment not received redirect to checkout page
+  $order = uc_order_load($order_id);
+  if ($order === FALSE || uc_order_status_data($order->order_status, 'state') != 'payment_received') {
+    drupal_goto('cart/checkout');
+  }
+
+  // Complete a sale
+  $output = uc_cart_complete_sale($order, variable_get('uc_new_customer_login', FALSE));
+
+  $page = variable_get('uc_cart_checkout_complete_page', '');
+  if (!empty($page)) {
+    drupal_goto($page);
+  }
+
+  return $output;
 }
 
 
@@ -208,6 +306,53 @@ function uc_epay_kkb_sign($str, $key) {
   $signature = '';
   openssl_sign($str, $signature, $key);
   return $signature;
+}
+
+/**
+ * Checks sign with public key.
+ */
+function uc_epay_kkb_check_sign($str, $sign, $filename = UC_EPAY_KKB_BANK_CERT_FILENAME) {
+  if (!uc_epay_kkb_check_cert_files()) {
+    return FALSE;
+  }
+
+  $c = file_get_contents($filename);
+  $pubkey = openssl_get_publickey($c);
+
+  if (!is_resource($pubkey)) {
+    $message = t("Error public key loading: ") . openssl_error_string();
+    drupal_set_message($message, 'error');
+    return FALSE;
+  }
+
+  $result = openssl_verify($str, $sign, $pubkey);
+
+  if ($result == -1) {
+    $message = t("Error signature verifying: ") . openssl_error_string();
+    drupal_set_message($message, 'error');
+    return FALSE;
+  }
+
+  openssl_free_key($pubkey);
+  return $result === 1 ? TRUE : FALSE;
+}
+
+/**
+ * Magic from bank example code.
+ * By char xml parsing.
+ */
+function uc_epay_kkb_split_sign($xml, $tag = 'BANK'){
+  $array = array();
+  $letterst = stristr($xml,"<".$tag);
+  $signst = stristr($xml,"<".$tag."_SIGN");
+  $signed = stristr($xml,"</".$tag."_SIGN");
+  $doced = stristr($signed,">");
+  $array['LETTER'] = substr($letterst,0,-strlen($signst));
+  $array['SIGN'] = substr($signst,0,-strlen($doced)+1);
+  $rawsignst = stristr($array['SIGN'],">");
+  $rawsigned = stristr($rawsignst,"</");
+  $array['RAWSIGN'] = substr($rawsignst,1,-strlen($rawsigned));
+  return $array;
 }
 
 /**
