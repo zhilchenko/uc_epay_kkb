@@ -176,10 +176,20 @@ function uc_epay_kkb_form($form_state, $order) {
   );
 
   // Add additional fields, required by payment gateway
+  $appendix = uc_epay_kkb_get_line_items_xml($order);
+  $form['appendix'] = array(
+    '#type' => 'hidden',
+    '#default_value' => base64_encode($appendix),
+  );
+
   global $language;
   $form['Language'] = array(
     '#type' => 'hidden',
     '#default_value' => $language->language,
+  );
+  $form['email'] = array(
+    '#type' => 'hidden',
+    '#default_value' => $order->primary_email,
   );
   $form['BackLink'] = array(
     '#type' => 'hidden',
@@ -353,6 +363,29 @@ function uc_epay_kkb_split_sign($xml, $tag = 'BANK'){
   $rawsigned = stristr($rawsignst,"</");
   $array['RAWSIGN'] = substr($rawsignst,1,-strlen($rawsigned));
   return $array;
+}
+
+/**
+ * Generate XML string with purchasing products. Format:
+ * <document>
+ *  <item number="1" name="First product title" quantity="2" amount="1000"/>
+ *  <item number="2" name="Second product title" quantity="2" amount="200"/>
+ * </document>
+ */
+function uc_epay_kkb_get_line_items_xml($order) {
+  $appendix = '';
+  $item_number = 1;
+  foreach ($order->products as $product) {
+    $appendix .= '<item number="' . $item_number . '" name="' . $product->title . '" ';
+    $appendix .= 'quantity="' . $product->qty . '" amount="' . $product->price * $product->qty . '" />';
+    $item_number += 1;
+  }
+  // Add shipping
+  $shipping_amount = sprintf("%u", $order->quote['rate']);
+  $appendix .= '<item number="' . $item_number . '" name="' . t('Shipping') . '" ';
+  $appendix .= 'amount="' . $shipping_amount . '" />';
+  $appendix = '<document>' . $appendix . '</document>';
+  return $appendix;
 }
 
 /**
