@@ -91,7 +91,7 @@ function uc_epay_kkb_payment_method_callback($op, &$arg1) {
       $form['uc_epay_kkb_gateway_url'] = array(
         '#type' => 'textfield',
         '#title' => t('Gateway URL'),
-        '#description' => t('When you are ready set URL to %live_url', array('%live_url' => UC_EPAY_KKB_PROD_GATEWAY_URL)),
+        '#description' => t('When you are ready to receive payments set URL to %live_url', array('%live_url' => UC_EPAY_KKB_PROD_GATEWAY_URL)),
         '#default_value' => variable_get('uc_epay_kkb_gateway_url', UC_EPAY_KKB_TEST_GATEWAY_URL),
         '#required' => TRUE,
       );
@@ -99,7 +99,7 @@ function uc_epay_kkb_payment_method_callback($op, &$arg1) {
       // Default variable values for testing (from epay documentation)
       $form['merchant'] = array(
         '#type' => 'fieldset',
-        '#title' => t('Merchant Information'),
+        '#title' => t('Merchant information'),
       );
       $form['merchant']['uc_epay_kkb_merchant_id'] = array(
         '#type' => 'textfield',
@@ -109,7 +109,7 @@ function uc_epay_kkb_payment_method_callback($op, &$arg1) {
       );
       $form['merchant']['uc_epay_kkb_merchant_name'] = array(
         '#type' => 'textfield',
-        '#title' => t('Shop/merchant name'),
+        '#title' => t('Merchant name'),
         '#default_value' => variable_get('uc_epay_kkb_merchant_name', 'Test shop'),
         '#required' => TRUE,
       );
@@ -140,7 +140,7 @@ function uc_epay_kkb_payment_method_callback($op, &$arg1) {
  */
 function uc_epay_kkb_form($form_state, $order) {
   // Add leading zeroes to order id
-  $order_id = sprintf ("%06d", $order->order_id);
+  $order_id = sprintf("%06d", $order->order_id);
 
   // Load merchant private key
   $password = variable_get('uc_epay_kkb_private_key_pass', 'nissan');
@@ -205,7 +205,7 @@ function uc_epay_kkb_form($form_state, $order) {
   $form['#action'] = variable_get('uc_epay_kkb_gateway_url', UC_EPAY_KKB_TEST_GATEWAY_URL);
   $form['submit'] = array(
     '#type' => 'submit',
-    '#value' => t('Process payment'),
+    '#value' => t('Proceed payment'),
   );
   return $form;
 }
@@ -232,20 +232,21 @@ function uc_epay_kkb_postlink() {
   $raw_sign = uc_epay_kkb_split_sign($response_raw);
   $sign = strrev(base64_decode($raw_sign['RAWSIGN']));
   if (!uc_epay_kkb_check_sign($raw_sign['LETTER'], $sign)) {
-    watchdog('epay.kkb.kz', 'Payment receiving error for order %order_id. Bank signature dont match.',
-             array('%order_id' => $order_id), WATCHDOG_ERROR);
-    uc_order_comment_save($order_id, 0, t('Attempted unverified epay.kkb.kz completion for this order.'), 'admin');
+    $message = t('Payment receiving error for order %order_id. Bank signature don\'t match.', 
+                  array('%order_id' => $order_id));
+    watchdog('uc_epay_kkb', $message, NULL, WATCHDOG_ERROR);
+    uc_order_comment_save($order_id, 0, $message, 'admin');
     return MENU_ACCESS_DENIED;
   }
 
   // Load order object
   if (($order = uc_order_load($order_id)) === FALSE) {
-    watchdog('epay.kkb.kz', 'Receiving payment notification for order %order_id, but order not found.',
+    watchdog('uc_epay_kkb', 'Receiving payment notification for order %order_id, but order not found.',
            array('%order_id' => $order_id), WATCHDOG_ERROR);
     return MENU_NOT_FOUND;
   }
 
-  watchdog('epay.kkb.kz', 'Receiving payment notification for order %order_id.',
+  watchdog('uc_epay_kkb', 'Receiving payment notification for order %order_id.',
          array('%order_id' => $order_id), WATCHDOG_INFO);
 
   // Check email entered by user at payment gateway page
@@ -305,7 +306,7 @@ function uc_epay_kkb_load_private_key($filename, $password = '') {
     return $prvkey;
   } else {
     $message = t("Error private key loading: ") . openssl_error_string();
-    drupal_set_message($message, 'error');
+    watchdog('uc_epay_kkb', $message, NULL, WATCHDOG_ERROR);
   }
 
   return FALSE;
@@ -333,7 +334,7 @@ function uc_epay_kkb_check_sign($str, $sign, $filename = UC_EPAY_KKB_BANK_CERT_F
 
   if (!is_resource($pubkey)) {
     $message = t("Error public key loading: ") . openssl_error_string();
-    drupal_set_message($message, 'error');
+    watchdog('uc_epay_kkb', $message, NULL, WATCHDOG_ERROR);
     return FALSE;
   }
 
@@ -341,7 +342,7 @@ function uc_epay_kkb_check_sign($str, $sign, $filename = UC_EPAY_KKB_BANK_CERT_F
 
   if ($result == -1) {
     $message = t("Error signature verifying: ") . openssl_error_string();
-    drupal_set_message($message, 'error');
+    watchdog('uc_epay_kkb', $message, NULL, WATCHDOG_ERROR);
     return FALSE;
   }
 
@@ -523,8 +524,8 @@ function uc_epay_kkb_check_web_dir($directory) {
     }
     // Unable to create htaccess... warn the user.
     else {
-      $message = "Security warning: Couldn't modify .htaccess file. Please create a .htaccess file in your %directory directory which contains the following lines: <code>!htaccess</code> or add them to the existing .htaccess file";
-      $replace = array('%directory' => $directory, '!htaccess' => '<br />'. nl2br(check_plain($htaccess_lines)));
+      $replace = array('%directory' => $directory, '%htaccess' => '<br />'. nl2br(check_plain($htaccess_lines)));
+      $message = t("Please create a .htaccess file in your %directory directory which contains the following lines: <code>%htaccess</code> or add them to the existing .htaccess file", $replace);
       drupal_set_message($message, 'error');
       return FALSE;
     }
@@ -545,7 +546,7 @@ function uc_epay_kkb_check_web_dir($directory) {
       fclose($fp);
     }
     else {
-      $message = t("Security notice: uc_epay_kkb was unable to write a test text file to the destination directory %directory, and is therefore unable to check the security of it.", array('%directory' => $directory));
+      $message = t("uc_epay_kkb was unable to write a test text file to the destination directory %directory, and is therefore unable to check the security of it.", array('%directory' => $directory));
       drupal_set_message($message, 'error');
       return FALSE;
     }
@@ -555,7 +556,7 @@ function uc_epay_kkb_check_web_dir($directory) {
   // so it's not a bullet-proof check.
   $path = trim(drupal_substr($directory .'/test.txt', drupal_strlen(file_directory_path())), '\\/');
   if (uc_epay_kkb_test_file_readable_remotely($path, $test_contents)) {
-    $message = t("Security notice: uc_epay_kkb will not save certificate files to the server because the destination directory is publicly accessible. If you want to save files to the server, please secure the '%directory' directory", array('%directory' => $directory));
+    $message = t("uc_epay_kkb certificate directory is publicly accessible. Please secure the '%directory' directory", array('%directory' => $directory));
     drupal_set_message($message, 'error');
     return FALSE;
   }
@@ -584,13 +585,13 @@ function uc_epay_kkb_check_cert_files() {
   if (!file_exists(UC_EPAY_KKB_BANK_CERT_FILENAME)){
     $message = t("uc_epay_kkb was unable to find bank public key %cert. Please, place it in %dir.",
                   array('%cert' => UC_EPAY_KKB_BANK_CERT_FILENAME, '%dir' => UC_EPAY_KKB_CERT_DIR));
-    drupal_set_message($message, 'error');
+    watchdog('uc_epay_kkb', $message, NULL, WATCHDOG_ERROR);
     $result = FALSE;
   }
   if (!file_exists(UC_EPAY_KKB_MERCH_CERT_FILENAME)) {
     $message = t("uc_epay_kkb was unable to find private merchant key %cert. Please, place it in %dir.",
                   array('%cert' => UC_EPAY_KKB_MERCH_CERT_FILENAME, '%dir' => UC_EPAY_KKB_CERT_DIR));
-    drupal_set_message($message, 'error');
+    watchdog('uc_epay_kkb', $message, NULL, WATCHDOG_ERROR);
     $result = FALSE;
   }
   return $result;
