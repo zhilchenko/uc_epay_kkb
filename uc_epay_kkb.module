@@ -23,10 +23,12 @@ define('UC_EPAY_METHOD_ID', 'epay_kkb');
  * Exposes epay.kkb.kz to Ubercart.
  */
 function uc_epay_kkb_payment_method() {
+  $image_url = '<img src="' . url(drupal_get_path('module', 'uc_epay_kkb'), array('absolute'=>true)) .
+               '/images/epay.gif" alt="ePay logo" style="position: relative; left: 2em">';
   $methods[] = array(
     'id' => UC_EPAY_METHOD_ID,
     'name' => t('Credit card (ePay.kkb.kz)'),
-    'title' => t('Credit card (ePay)'),
+    'title' => t('Credit card') . $image_url,
     'description' => t('Redirect to ePay.kkb.kz to pay by credit card.'),
     'callback' => 'uc_epay_kkb_payment_method_callback',
     'weight' => 1,
