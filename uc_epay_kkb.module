@@ -240,6 +240,15 @@ function uc_epay_kkb_postlink() {
     return MENU_ACCESS_DENIED;
   }
 
+  // Check bank response code (00 if success)
+  if ($response_code = $payment_attr['response_code'] != '00') {
+    $message = t('Payment receiving error for order %order_id. Bad response code (%code).', 
+                  array('%order_id' => $order_id, '%code' => $response_code));
+    watchdog('uc_epay_kkb', $message, NULL, WATCHDOG_ERROR);
+    uc_order_comment_save($order_id, 0, $message, 'admin');
+    return MENU_ACCESS_DENIED;
+  }
+
   // Load order object
   if (($order = uc_order_load($order_id)) === FALSE) {
     watchdog('uc_epay_kkb', 'Receiving payment notification for order %order_id, but order not found.',
