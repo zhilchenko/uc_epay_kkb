@@ -227,6 +227,7 @@ function uc_epay_kkb_postlink() {
   $response = simplexml_load_string($response_raw);
 
   $order_id = (int) $response->bank->customer->merchant->order->attributes()->order_id;
+  $payment_attr = $response->bank->results->payment->attributes();
 
   // Get, decode, revert and check bank signature
   $raw_sign = uc_epay_kkb_split_sign($response_raw);
@@ -256,10 +257,16 @@ function uc_epay_kkb_postlink() {
                                           array('%email' => check_plain($entered_email))), 'admin');
   }
 
+  // Add payment data to order object for future confirmation
+  $order->data['uc_epay_kkb']['reference_id'] = (int) $payment_attr['reference'];
+  $order->data['uc_epay_kkb']['approval_code'] = (int) $payment_attr['approval_code'];
+  uc_order_save($order);
+
   // Add payment to order
   $comment = t('Paid by epay.kkb.kz.');
-  $amount = (int) $response->bank->customer->merchant->order->attributes()->amount;
-  uc_payment_enter($order_id, UC_EPAY_METHOD_ID, $amount, 0, NULL, $comment);
+  $amount = (int) $payment_attr['amount'];
+  $payment_data['uc_epay_kkb']['response_raw'] = $response_raw;
+  uc_payment_enter($order_id, UC_EPAY_METHOD_ID, $amount, 0, $payment_data, $comment);
 
   return TRUE;
 }
