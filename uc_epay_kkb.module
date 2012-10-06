@@ -400,10 +400,14 @@ function uc_epay_kkb_get_line_items_xml($order) {
     $item_number += 1;
   }
   // Add shipping
-  $shipping_amount = sprintf("%u", $order->quote['rate']);
-  $appendix .= '<item number="' . $item_number . '" name="' . t('Shipping') . '" ';
-  $appendix .= 'amount="' . $shipping_amount . '" />';
+  if ($order->quote['rate'] > 0) {
+    $shipping_amount = sprintf("%u", $order->quote['rate']);
+    $appendix .= '<item number="' . $item_number . '" name="' . t('Shipping') . '" ';
+    $appendix .= 'amount="' . $shipping_amount . '" />';
+  }
+
   $appendix = '<document>' . $appendix . '</document>';
+
   return $appendix;
 }
 
