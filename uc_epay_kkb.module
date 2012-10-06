@@ -13,6 +13,8 @@ define('UC_EPAY_KKB_MERCH_CERT_FILENAME', UC_EPAY_KKB_CERT_DIR . '/' . 'merch.pe
 // Define default test and production URLs
 define('UC_EPAY_KKB_TEST_GATEWAY_URL', 'https://3dsecure.kkb.kz/jsp/process/logon.jsp');
 define('UC_EPAY_KKB_PROD_GATEWAY_URL', 'https://epay.kkb.kz/jsp/process/logon.jsp');
+define('UC_EPAY_KKB_TEST_CTRL_URL', 'https://3dsecure.kkb.kz/jsp/remote/control.jsp');
+define('UC_EPAY_KKB_PROD_CTRL_URL', 'https://epay.kkb.kz/jsp/remote/control.jsp');
 
 define('UC_EPAY_METHOD_ID', 'epay_kkb');
 
@@ -74,6 +76,62 @@ function uc_epay_kkb_form_alter(&$form, $form_state, $form_id) {
       $form['#prefix'] = '<table id="epay-kkb-review-table"><tr><td>';
       $form['#suffix'] = '</td><td>'. drupal_get_form('uc_epay_kkb_form', $order) .'</td></tr></table>';
     }
+  }
+}
+
+/**
+ * Implements hook_order().
+ */
+function uc_epay_kkb_order($op, $arg1, $arg2) {
+  if ($op == 'update') {
+    // Set readable aliases to arguments
+    $order = $arg1;
+    $order_status = $arg2;
+
+    // if ($order_status == 'completed') { //DEBUG
+      $template = '<merchant id="[MERCHANT_ID]"><command type="[COMMAND]"/><payment reference="[REFERENCE_ID]" approval_code="[APPROVAL_CODE]" orderid="[ORDER_ID]" amount="[AMOUNT]" currency_code="[CURRENCY]"/><reason>[REASON]</reason></merchant>';
+
+      $data = array();
+      $data['[MERCHANT_ID]']             = variable_get('uc_epay_kkb_merchant_id', '92061101');
+      $data['[ORDER_ID]']                = sprintf("%06d", $order->order_id); // Add leading zeroes to order id
+      $data['[CURRENCY]']                = uc_epay_kkb_get_currency_digital_code($order->currency);
+      $data['[AMOUNT]']                  = $order->order_total;
+      $data['[COMMAND]']                 = 'complete';
+      $data['[REFERENCE_ID]']            = $order->data['uc_epay_kkb']['reference_id'];
+      $data['[APPROVAL_CODE]']           = $order->data['uc_epay_kkb']['approval_code'];
+      $data['[REASON]']                  = '';
+
+      // Fill template
+      $template = str_replace(array_keys($data), $data, $template);
+
+      // Load merchant private key
+      $password = variable_get('uc_epay_kkb_private_key_pass', 'nissan');
+      if (!($prvkey = uc_epay_kkb_load_private_key(UC_EPAY_KKB_MERCH_CERT_FILENAME, $password))) {
+        return FALSE;
+      }
+
+      // Get signature and reverse it
+      $signature = strrev(uc_epay_kkb_sign($template, $prvkey));
+
+      $sert_id = variable_get('uc_epay_kkb_merchant_certificate_id', '00C182B189');
+      // Concat and encode signature string
+      $result_sign = '<merchant_sign type="RSA" cert_id="' . $sert_id . '">' . base64_encode($signature).'</merchant_sign>';
+
+      // Concat and encode result string
+      $payment_data = '?<document>' . $template . $result_sign . '</document>';
+
+      $payment_data = '?<document><merchant id="92061101"><command type="complete"/><payment reference="121008144242" approval_code="144242" orderid="000010" amount="76500" currency_code="398"/><reason></reason></merchant><merchant_sign type="RSA" cert_id="00C182B189">NGrzsJd57Q3l3G0d7O8X0i7mtgoKzduCdtnrdyUzOL6I+TfY3ogyYVVmUjhpFC6fplbqvKz/OlxEva/hXIJsVQ==</merchant_sign></document>';//DEBUG
+
+      $url = UC_EPAY_KKB_TEST_CTRL_URL . $payment_data;
+      $header = drupal_http_request($url);
+
+      $myFile = drupal_get_path('module', 'uc_epay_kkb') . "/request.txt";//DEBUG
+      $fh = fopen($myFile, 'w') or die("can't open file");//DEBUG
+      fwrite($fh, print_r($header, true));//DEBUG
+      fwrite($fh, $url);//DEBUG
+      fclose($fh);//DEBUG
+
+    // } //DEBUG
   }
 }
 
