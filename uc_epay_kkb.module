@@ -99,7 +99,7 @@ function uc_epay_kkb_order($op, $arg1, $arg2) {
     $order = $arg1;
     $order_status = $arg2;
 
-    // if ($order_status == 'completed') { //DEBUG
+    if ($order_status == 'completed') {
       $template = '<merchant id="[MERCHANT_ID]"><command type="[COMMAND]"/><payment reference="[REFERENCE_ID]" approval_code="[APPROVAL_CODE]" orderid="[ORDER_ID]" amount="[AMOUNT]" currency_code="[CURRENCY]"/><reason>[REASON]</reason></merchant>';
 
       $data = array();
@@ -129,20 +129,29 @@ function uc_epay_kkb_order($op, $arg1, $arg2) {
       $result_sign = '<merchant_sign type="RSA" cert_id="' . $sert_id . '">' . base64_encode($signature).'</merchant_sign>';
 
       // Concat and encode result string
-      $payment_data = '?<document>' . $template . $result_sign . '</document>';
-
-      $payment_data = '?<document><merchant id="92061101"><command type="complete"/><payment reference="121008144242" approval_code="144242" orderid="000010" amount="76500" currency_code="398"/><reason></reason></merchant><merchant_sign type="RSA" cert_id="00C182B189">NGrzsJd57Q3l3G0d7O8X0i7mtgoKzduCdtnrdyUzOL6I+TfY3ogyYVVmUjhpFC6fplbqvKz/OlxEva/hXIJsVQ==</merchant_sign></document>';//DEBUG
+      $payment_data = '?' . urlencode('<document>' . $template . $result_sign . '</document>');
 
       $url = UC_EPAY_KKB_TEST_CTRL_URL . $payment_data;
-      $header = drupal_http_request($url);
+      $http_response = drupal_http_request($url);
 
-      $myFile = drupal_get_path('module', 'uc_epay_kkb') . "/request.txt";//DEBUG
-      $fh = fopen($myFile, 'w') or die("can't open file");//DEBUG
-      fwrite($fh, print_r($header, true));//DEBUG
-      fwrite($fh, $url);//DEBUG
-      fclose($fh);//DEBUG
+      // Create SimpleXML object from response data
+      $response = simplexml_load_string(trim($http_response->data));
 
-    // } //DEBUG
+      $response_attr = $response->bank->response->attributes();
+
+      // Check bank response code (00 if success)
+      if ($response_code = $response_attr['code'] == '00') {
+        $message = t('Payment approved by epay.kkb.kz.');
+        drupal_set_message($message);
+        uc_order_comment_save($order->order_id, 0, $message, 'admin');
+      }
+      else {
+        $message = t('Payment completing error. Bad response code (%code).', array('%code' => $response_code));
+        watchdog('uc_epay_kkb', $message, NULL, WATCHDOG_ERROR);
+        uc_order_comment_save($order->order_id, 0, $message, 'admin');
+        return FALSE;
+      }
+    }
   }
 }
 
