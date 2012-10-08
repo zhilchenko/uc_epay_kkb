@@ -65,6 +65,17 @@ function uc_epay_kkb_menu() {
 }
 
 /**
+ * Implements hook_ucga_display().
+ */
+function uc_epay_kkb_ucga_display() {
+  // Tell UC Google Analytics to display the e-commerce JS on the custom
+  // order completion page for this module.
+  if (arg(0) == 'cart' && arg(1) == 'epaykkb' && arg(2) == 'backlink') {
+    return TRUE;
+  }
+}
+
+/**
  * Implements hook_form_alter().
  */
 function uc_epay_kkb_form_alter(&$form, $form_state, $form_id) {
@@ -271,6 +282,32 @@ function uc_epay_kkb_form($form_state, $order) {
 /**
  * Menu callback for bank response page.
  * Check payment, set order status.
+ *
+ * Bank response example:
+ *  <document>
+ *  <bank name="Kazkommertsbank JSC">
+ *    <customer name="Ivanov Ivan" mail="test@mvp.kz" phone="+7 7252 55-10-89">
+ *      <merchant cert_id="00C182B189" name="Test shop">
+ *        <order order_id="000011" amount="90000" currency="398">
+ *          <department merchant_id="92061101" amount="90000"/>
+ *        </order>
+ *      </merchant>
+ *      <merchant_sign type="RSA"/>
+ *    </customer>
+ *    <customer_sign type="RSA"/>
+ *    <results timestamp="2012-10-03 09:37:21">
+ *      <payment merchant_id="92061101"
+ *           card="548318-XX-XXXX-0293"
+ *           amount="90000"
+ *           reference="121003093721"
+ *           approval_code="093721"
+ *           response_code="00"
+ *           Secure="Yes"
+ *           card_bin="KAZ"/>
+ *    </results>
+ *  </bank>
+ *  <bank_sign cert_id="00C18327E8" type="SHA/RSA">n68csZewsXKzVbr9oeovaNJESsYTu6kaXfJ9IbH+BoJtCjm/mAf+UEByDS1SNUkMpnTPgo8jxWRUBjpwNQnRAxo68+PsN3NpOrRhRrnZxUTpQBdCvOgo2yNEqr8T3ypWvCU4h84X9o7sSyZuqE6M/S/wjjLI6Q4VEWh89GjohI=</bank_sign>
+ *  </document>
  */
 function uc_epay_kkb_postlink() {
 
@@ -458,10 +495,14 @@ function uc_epay_kkb_get_line_items_xml($order) {
     $item_number += 1;
   }
   // Add shipping
-  $shipping_amount = sprintf("%u", $order->quote['rate']);
-  $appendix .= '<item number="' . $item_number . '" name="' . t('Shipping') . '" ';
-  $appendix .= 'amount="' . $shipping_amount . '" />';
+  if ($order->quote['rate'] > 0) {
+    $shipping_amount = sprintf("%u", $order->quote['rate']);
+    $appendix .= '<item number="' . $item_number . '" name="' . t('Shipping') . '" ';
+    $appendix .= 'amount="' . $shipping_amount . '" />';
+  }
+
   $appendix = '<document>' . $appendix . '</document>';
+
   return $appendix;
 }
 

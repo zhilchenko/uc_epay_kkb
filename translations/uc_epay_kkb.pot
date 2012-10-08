@@ -1,0 +1,158 @@
+# $Id$
+#
+# LANGUAGE translation of Drupal (general)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from files:
+#  test.php: n/a
+#  uc_epay_kkb.module: n/a
+#  uc_epay_kkb.info: n/a
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2012-10-06 10:03+0600\n"
+"PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
+"Last-Translator: NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <EMAIL@ADDRESS>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: test.php:56 uc_epay_kkb.module:352
+msgid "Error public key loading: "
+msgstr ""
+
+#: test.php:64 uc_epay_kkb.module:360
+msgid "Error signature verifying: "
+msgstr ""
+
+#: uc_epay_kkb.module:30
+msgid "Credit card (ePay.kkb.kz)"
+msgstr ""
+
+#: uc_epay_kkb.module:31
+msgid "Credit card"
+msgstr ""
+
+#: uc_epay_kkb.module:32
+msgid "Redirect to ePay.kkb.kz to pay by credit card."
+msgstr ""
+
+#: uc_epay_kkb.module:93
+msgid "Gateway URL"
+msgstr ""
+
+#: uc_epay_kkb.module:94
+msgid "When you are ready to receive payments set URL to %live_url"
+msgstr ""
+
+#: uc_epay_kkb.module:102
+msgid "Merchant information"
+msgstr ""
+
+#: uc_epay_kkb.module:106
+msgid "Merchant ID"
+msgstr ""
+
+#: uc_epay_kkb.module:112
+msgid "Merchant name"
+msgstr ""
+
+#: uc_epay_kkb.module:118
+msgid "Certificate serial number"
+msgstr ""
+
+#: uc_epay_kkb.module:125
+msgid "Keys"
+msgstr ""
+
+#: uc_epay_kkb.module:129
+msgid "Merchant private key password"
+msgstr ""
+
+#: uc_epay_kkb.module:208
+msgid "Proceed payment"
+msgstr ""
+
+#: uc_epay_kkb.module:236
+msgid "Payment receiving error for order %order_id. Bank signature don't match."
+msgstr ""
+
+#: uc_epay_kkb.module:245
+msgid "Payment receiving error for order %order_id. Bad response code (%code)."
+msgstr ""
+
+#: uc_epay_kkb.module:265
+msgid "Customer used a different e-mail address during payment: %email"
+msgstr ""
+
+#: uc_epay_kkb.module:275
+msgid "Paid by epay.kkb.kz."
+msgstr ""
+
+#: uc_epay_kkb.module:324
+msgid "Error private key loading: "
+msgstr ""
+
+#: uc_epay_kkb.module:405
+msgid "Shipping"
+msgstr ""
+
+#: uc_epay_kkb.module:532
+msgid "uc_epay_kkb was unable to create directory %directory. Please, create it by hand."
+msgstr ""
+
+#: uc_epay_kkb.module:548
+msgid "Please create a .htaccess file in your %directory directory which contains the following lines: <code>%htaccess</code> or add them to the existing .htaccess file"
+msgstr ""
+
+#: uc_epay_kkb.module:569
+msgid "uc_epay_kkb was unable to write a test text file to the destination directory %directory, and is therefore unable to check the security of it."
+msgstr ""
+
+#: uc_epay_kkb.module:579
+msgid "uc_epay_kkb certificate directory is publicly accessible. Please secure the '%directory' directory"
+msgstr ""
+
+#: uc_epay_kkb.module:606
+msgid "uc_epay_kkb was unable to find bank public key %cert. Please, place it in %dir."
+msgstr ""
+
+#: uc_epay_kkb.module:612
+msgid "uc_epay_kkb was unable to find private merchant key %cert. Please, place it in %dir."
+msgstr ""
+
+#: uc_epay_kkb.module:254;259
+msgid "uc_epay_kkb"
+msgstr ""
+
+#: uc_epay_kkb.module:254
+msgid "Receiving payment notification for order %order_id, but order not found."
+msgstr ""
+
+#: uc_epay_kkb.module:259
+msgid "Receiving payment notification for order %order_id."
+msgstr ""
+
+#: uc_epay_kkb.module:49
+msgid "Order payment"
+msgstr ""
+
+#: uc_epay_kkb.module:56
+msgid "Order complete"
+msgstr ""
+
+#: uc_epay_kkb.info:0
+msgid "ePay from KKB"
+msgstr ""
+
+#: uc_epay_kkb.info:0
+msgid "Process payments using ePay.kkb.kz."
+msgstr ""
+
+#: uc_epay_kkb.info:0
+msgid "Ubercart - payment"
+msgstr ""
+
