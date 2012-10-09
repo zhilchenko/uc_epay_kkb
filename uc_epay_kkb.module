@@ -132,8 +132,8 @@ function uc_epay_kkb_order($op, $arg1, $arg2) {
       // Concat and encode result string
       $payment_data = '?' . urlencode('<document>' . $template . $result_sign . '</document>');
 
-      $url = UC_EPAY_KKB_TEST_CTRL_URL . $payment_data;
-      $http_response = drupal_http_request($url);
+      $url = variable_get('uc_epay_kkb_completing_url', UC_EPAY_KKB_TEST_CTRL_URL);
+      $http_response = drupal_http_request($url . $payment_data);
 
       // Create SimpleXML object from response data
       $response = simplexml_load_string(trim($http_response->data));
@@ -167,11 +167,23 @@ function uc_epay_kkb_payment_method_callback($op, &$arg1) {
       // Check keys
       uc_epay_kkb_check_cert_files();
 
-      $form['uc_epay_kkb_gateway_url'] = array(
+      // Default variable values for testing (from epay documentation)
+      $form['urls'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('URL'),
+      );
+      $form['urls']['uc_epay_kkb_gateway_url'] = array(
         '#type' => 'textfield',
-        '#title' => t('Gateway URL'),
+        '#title' => t('Payment URL'),
         '#description' => t('When you are ready to receive payments set URL to %live_url', array('%live_url' => UC_EPAY_KKB_PROD_GATEWAY_URL)),
         '#default_value' => variable_get('uc_epay_kkb_gateway_url', UC_EPAY_KKB_TEST_GATEWAY_URL),
+        '#required' => TRUE,
+      );
+      $form['urls']['uc_epay_kkb_completing_url'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Completing URL'),
+        '#description' => t('When you are ready to receive payments set URL to %live_url', array('%live_url' => UC_EPAY_KKB_PROD_CTRL_URL)),
+        '#default_value' => variable_get('uc_epay_kkb_completing_url', UC_EPAY_KKB_TEST_CTRL_URL),
         '#required' => TRUE,
       );
 
