@@ -16,6 +16,7 @@ define('UC_EPAY_KKB_PROD_GATEWAY_URL', 'https://epay.kkb.kz/jsp/process/logon.js
 define('UC_EPAY_KKB_TEST_CTRL_URL', 'https://3dsecure.kkb.kz/jsp/remote/control.jsp');
 define('UC_EPAY_KKB_PROD_CTRL_URL', 'https://epay.kkb.kz/jsp/remote/control.jsp');
 
+// Define payment method id
 define('UC_EPAY_METHOD_ID', 'epay_kkb');
 
 
@@ -25,13 +26,14 @@ define('UC_EPAY_METHOD_ID', 'epay_kkb');
  * Exposes epay.kkb.kz to Ubercart.
  */
 function uc_epay_kkb_payment_method() {
-  $image_url = '<img src="' . url(drupal_get_path('module', 'uc_epay_kkb'), array('absolute'=>true)) .
+  // Build epay logo URL
+  $logo_url = '<img src="' . url(drupal_get_path('module', 'uc_epay_kkb'), array('absolute' => TRUE)) .
                '/images/epay.gif" alt="ePay logo" style="position: relative; left: 2em">';
   $methods[] = array(
     'id' => UC_EPAY_METHOD_ID,
-    'name' => t('Credit card (ePay.kkb.kz)'),
-    'title' => t('Credit card') . $image_url,
-    'description' => t('Redirect to ePay.kkb.kz to pay by credit card.'),
+    'name' => t('Credit card (epay.kkb.kz)'),
+    'title' => t('Credit card') . $logo_url,
+    'description' => t('Redirect to epay.kkb.kz to pay by credit card.'),
     'callback' => 'uc_epay_kkb_payment_method_callback',
     'weight' => 1,
     'checkout' => TRUE,
@@ -76,13 +78,16 @@ function uc_epay_kkb_ucga_display() {
 }
 
 /**
- * Implements hook_form_alter().
+ * Implements hook_form_FORM_ID_alter().
+ *
+ * @see uc_cart_checkout_review_form()
  */
-function uc_epay_kkb_form_alter(&$form, $form_state, $form_id) {
-  if ($form_id == 'uc_cart_checkout_review_form' && ($order_id = intval($_SESSION['cart_order'])) > 0) {
+function uc_epay_kkb_form_uc_cart_checkout_review_form_alter(&$form, $form_state) {
+  if (($order_id = intval($_SESSION['cart_order'])) > 0) {
     $order = uc_order_load($order_id);
 
     if ($order->payment_method == UC_EPAY_METHOD_ID) {
+      // Change submit element
       unset($form['submit']);
       $form['#prefix'] = '<table id="epay-kkb-review-table"><tr><td>';
       $form['#suffix'] = '</td><td>'. drupal_get_form('uc_epay_kkb_form', $order) .'</td></tr></table>';
@@ -94,6 +99,7 @@ function uc_epay_kkb_form_alter(&$form, $form_state, $form_id) {
  * Implements hook_order().
  */
 function uc_epay_kkb_order($op, $arg1, $arg2) {
+  // On status change
   if ($op == 'update') {
     // Set readable aliases to arguments
     $order = $arg1;
@@ -101,17 +107,18 @@ function uc_epay_kkb_order($op, $arg1, $arg2) {
 
     $completing_status = variable_get('uc_epay_kkb_completing_order_status', 'completed');
     if ($order_status == $completing_status) {
+      // Define command XML template
       $template = '<merchant id="[MERCHANT_ID]"><command type="[COMMAND]"/><payment reference="[REFERENCE_ID]" approval_code="[APPROVAL_CODE]" orderid="[ORDER_ID]" amount="[AMOUNT]" currency_code="[CURRENCY]"/><reason>[REASON]</reason></merchant>';
 
       $data = array();
       $data['[MERCHANT_ID]']             = variable_get('uc_epay_kkb_merchant_id', '92061101');
-      $data['[ORDER_ID]']                = sprintf("%06d", $order->order_id); // Add leading zeroes to order id
+      $data['[ORDER_ID]']                = uc_epay_kkb_format_order_id($order->order_id); // Add leading zeroes to order id
       $data['[CURRENCY]']                = uc_epay_kkb_get_currency_digital_code($order->currency);
       $data['[AMOUNT]']                  = $order->order_total;
       $data['[COMMAND]']                 = 'complete';
-      $data['[REFERENCE_ID]']            = $order->data['uc_epay_kkb']['reference_id'];
+      $data['[REFERENCE_ID]']            = $order->data['uc_epay_kkb']['reference_id']; // See in uc_epay_kkb_postlink()
       $data['[APPROVAL_CODE]']           = $order->data['uc_epay_kkb']['approval_code'];
-      $data['[REASON]']                  = '';
+      $data['[REASON]']                  = ''; // No reason for 'complete' operation
 
       // Fill template
       $template = str_replace(array_keys($data), $data, $template);
@@ -120,10 +127,11 @@ function uc_epay_kkb_order($op, $arg1, $arg2) {
       $signature = uc_epay_kkb_sign($template);
 
       $sert_id = variable_get('uc_epay_kkb_merchant_certificate_id', '00C182B189');
-      // Concat and encode signature string
-      $result_sign = '<merchant_sign type="RSA" cert_id="' . $sert_id . '">' . base64_encode($signature).'</merchant_sign>';
+      // Concatenate signature string
+      $result_sign = '<merchant_sign type="RSA" cert_id="' . $sert_id . '">';
+      $result_sign .= base64_encode($signature) . '</merchant_sign>';
 
-      // Concat and encode result string
+      // Concatenate and urlencode result string
       $payment_data = '?' . urlencode('<document>' . $template . $result_sign . '</document>');
 
       $url = variable_get('uc_epay_kkb_completing_url', UC_EPAY_KKB_TEST_CTRL_URL);
@@ -181,7 +189,6 @@ function uc_epay_kkb_payment_method_callback($op, &$arg1) {
         '#required' => TRUE,
       );
 
-      // Default variable values for testing (from epay documentation)
       $form['merchant'] = array(
         '#type' => 'fieldset',
         '#title' => t('Merchant information'),
@@ -238,11 +245,11 @@ function uc_epay_kkb_payment_method_callback($op, &$arg1) {
 }
 
 /**
- * Form to build the submission to epay.kkb.kz.
+ * Build submission form to the epay.kkb.kz.
  */
 function uc_epay_kkb_form($form_state, $order) {
   // Add leading zeroes to order id
-  $order_id = sprintf("%06d", $order->order_id);
+  $order_id = uc_epay_kkb_format_order_id($order->order_id);
 
   // Define template with data required by payment gateway
   $template = '<merchant cert_id="[MERCHANT_CERTIFICATE_ID]" name="[MERCHANT_NAME]"><order order_id="[ORDER_ID]" amount="[AMOUNT]" currency="[CURRENCY]"><department merchant_id="[MERCHANT_ID]" amount="[AMOUNT]"/></order></merchant>';
@@ -262,10 +269,10 @@ function uc_epay_kkb_form($form_state, $order) {
   $signature = uc_epay_kkb_sign($template);
 
   // Concat and encode signature string
-  $result_sign = '<merchant_sign type="RSA">'.base64_encode($signature).'</merchant_sign>';
+  $result_sign = '<merchant_sign type="RSA">' . base64_encode($signature) . '</merchant_sign>';
 
   // Concat and encode result string
-  $payment_data = base64_encode("<document>".$template.$result_sign."</document>");
+  $payment_data = base64_encode("<document>" . $template . $result_sign . "</document>");
 
   // Add data field to form
   $form['Signed_Order_B64'] = array(
@@ -273,7 +280,7 @@ function uc_epay_kkb_form($form_state, $order) {
     '#default_value' => $payment_data,
   );
 
-  // Add additional fields, required by payment gateway
+  // Add paid items
   $appendix = uc_epay_kkb_get_line_items_xml($order);
   $form['appendix'] = array(
     '#type' => 'hidden',
@@ -343,7 +350,7 @@ function uc_epay_kkb_postlink() {
     return MENU_ACCESS_DENIED;
   }
 
-  $response_raw = stripslashes($_POST['response']);
+  $response_raw = filter_xss($_POST['response']);
 
   // Create SimpleXML object from response data
   $response = simplexml_load_string($response_raw);
@@ -355,7 +362,7 @@ function uc_epay_kkb_postlink() {
   $raw_sign = uc_epay_kkb_split_sign($response_raw);
   $sign = strrev(base64_decode($raw_sign['RAWSIGN']));
   if (!uc_epay_kkb_check_sign($raw_sign['LETTER'], $sign)) {
-    $message = t('Payment receiving error for order %order_id. Bank signature don\'t match.', 
+    $message = t('Payment receiving error for order %order_id. Bank signature don\'t match.',
                   array('%order_id' => $order_id));
     watchdog('uc_epay_kkb', $message, NULL, WATCHDOG_ERROR);
     uc_order_comment_save($order_id, 0, $message, 'admin');
@@ -374,16 +381,16 @@ function uc_epay_kkb_postlink() {
   // Load order object
   if (($order = uc_order_load($order_id)) === FALSE) {
     watchdog('uc_epay_kkb', 'Receiving payment notification for order %order_id, but order not found.',
-           array('%order_id' => $order_id), WATCHDOG_ERROR);
+              array('%order_id' => $order_id), WATCHDOG_ERROR);
     return MENU_NOT_FOUND;
   }
 
   watchdog('uc_epay_kkb', 'Receiving payment notification for order %order_id.',
-         array('%order_id' => $order_id), WATCHDOG_INFO);
+            array('%order_id' => $order_id), WATCHDOG_INFO);
 
   // Check email entered by user at payment gateway page
   $entered_email = (string) $response->bank->customer->attributes()->mail;
-  if (strtolower($entered_email) !== strtolower($order->primary_email)) {
+  if (drupal_strtolower($entered_email) !== drupal_strtolower($order->primary_email)) {
     uc_order_comment_save($order_id, 0, t('Customer used a different e-mail address during payment: %email',
                                           array('%email' => check_plain($entered_email))), 'admin');
   }
@@ -442,8 +449,9 @@ function uc_epay_kkb_load_private_key($filename, $password = '') {
 
   if (is_resource($prvkey)) {
     return $prvkey;
-  } else {
-    $message = t("Error private key loading: ") . openssl_error_string();
+  }
+  else {
+    $message = t("Error private key loading: %error", array('%error' => openssl_error_string()));
     watchdog('uc_epay_kkb', $message, NULL, WATCHDOG_ERROR);
   }
 
@@ -478,7 +486,7 @@ function uc_epay_kkb_check_sign($str, $sign, $filename = UC_EPAY_KKB_BANK_CERT_F
   $pubkey = openssl_get_publickey($c);
 
   if (!is_resource($pubkey)) {
-    $message = t("Error public key loading: ") . openssl_error_string();
+    $message = t("Error public key loading: %error", array('%error' => openssl_error_string()));
     watchdog('uc_epay_kkb', $message, NULL, WATCHDOG_ERROR);
     return FALSE;
   }
@@ -486,7 +494,7 @@ function uc_epay_kkb_check_sign($str, $sign, $filename = UC_EPAY_KKB_BANK_CERT_F
   $result = openssl_verify($str, $sign, $pubkey);
 
   if ($result == -1) {
-    $message = t("Error signature verifying: ") . openssl_error_string();
+    $message = t("Error signature verifying: %error", array('%error' => openssl_error_string()));
     watchdog('uc_epay_kkb', $message, NULL, WATCHDOG_ERROR);
     return FALSE;
   }
@@ -499,17 +507,17 @@ function uc_epay_kkb_check_sign($str, $sign, $filename = UC_EPAY_KKB_BANK_CERT_F
  * Magic from bank example code.
  * By char xml parsing.
  */
-function uc_epay_kkb_split_sign($xml, $tag = 'BANK'){
+function uc_epay_kkb_split_sign($xml, $tag = 'BANK') {
   $array = array();
-  $letterst = stristr($xml,"<".$tag);
-  $signst = stristr($xml,"<".$tag."_SIGN");
-  $signed = stristr($xml,"</".$tag."_SIGN");
-  $doced = stristr($signed,">");
-  $array['LETTER'] = substr($letterst,0,-strlen($signst));
-  $array['SIGN'] = substr($signst,0,-strlen($doced)+1);
-  $rawsignst = stristr($array['SIGN'],">");
-  $rawsigned = stristr($rawsignst,"</");
-  $array['RAWSIGN'] = substr($rawsignst,1,-strlen($rawsigned));
+  $letterst = stristr($xml, "<" . $tag);
+  $signst = stristr($xml, "<" . $tag . "_SIGN");
+  $signed = stristr($xml, "</" . $tag . "_SIGN");
+  $doced = stristr($signed, ">");
+  $array['LETTER'] = substr($letterst, 0, -strlen($signst));
+  $array['SIGN'] = substr($signst, 0, -strlen($doced) + 1);
+  $rawsignst = stristr($array['SIGN'], ">");
+  $rawsigned = stristr($rawsignst, "</");
+  $array['RAWSIGN'] = substr($rawsignst, 1, -strlen($rawsigned));
   return $array;
 }
 
@@ -659,7 +667,7 @@ function uc_epay_kkb_check_web_dir($directory) {
   // Check directory is existed
   if (!file_check_directory($directory, FILE_CREATE_DIRECTORY)) {
     $message = t("uc_epay_kkb was unable to create directory %directory. Please, create it by hand.",
-                 array('%directory' => $directory));
+                  array('%directory' => $directory));
     drupal_set_message($message, 'error');
     return FALSE;
   }
@@ -731,7 +739,7 @@ function uc_epay_kkb_test_file_readable_remotely($path, $contents) {
  */
 function uc_epay_kkb_check_cert_files() {
   $result = TRUE;
-  if (!file_exists(UC_EPAY_KKB_BANK_CERT_FILENAME)){
+  if (!file_exists(UC_EPAY_KKB_BANK_CERT_FILENAME)) {
     $message = t("uc_epay_kkb was unable to find bank public key %cert. Please, place it in %dir.",
                   array('%cert' => UC_EPAY_KKB_BANK_CERT_FILENAME, '%dir' => UC_EPAY_KKB_CERT_DIR));
     watchdog('uc_epay_kkb', $message, NULL, WATCHDOG_ERROR);
@@ -744,4 +752,12 @@ function uc_epay_kkb_check_cert_files() {
     $result = FALSE;
   }
   return $result;
+}
+
+/**
+ * Format order id.
+ */
+function uc_epay_kkb_format_order_id($id) {
+  // Add leading zeroes to order id
+  return sprintf("%06d", $id);
 }
