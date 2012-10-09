@@ -99,7 +99,8 @@ function uc_epay_kkb_order($op, $arg1, $arg2) {
     $order = $arg1;
     $order_status = $arg2;
 
-    if ($order_status == 'completed') {
+    $completing_status = variable_get('uc_epay_kkb_completing_order_status', 'completed');
+    if ($order_status == $completing_status) {
       $template = '<merchant id="[MERCHANT_ID]"><command type="[COMMAND]"/><payment reference="[REFERENCE_ID]" approval_code="[APPROVAL_CODE]" orderid="[ORDER_ID]" amount="[AMOUNT]" currency_code="[CURRENCY]"/><reason>[REASON]</reason></merchant>';
 
       $data = array();
@@ -207,6 +208,23 @@ function uc_epay_kkb_payment_method_callback($op, &$arg1) {
         '#title' => t('Merchant private key password'),
         '#default_value' => variable_get('uc_epay_kkb_private_key_pass', 'nissan'),
         '#required' => TRUE,
+      );
+
+      $form['completing'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Payment completing'),
+      );
+      // Get order statuses
+      $statuses = array();
+      foreach (uc_order_status_list() as $status) {
+        $statuses[$status['id']] = $status['title'];
+      }
+      $form['completing']['uc_epay_kkb_completing_order_status'] = array(
+        '#type' => 'select',
+        '#title' => t('Completing order status'),
+        '#default_value' => variable_get('uc_epay_kkb_completing_order_status', 'completed'),
+        '#options' => $statuses,
+        '#description' => t('When order status will be equal to value of this element system make a payment completing request to gateway.'),
       );
 
       return $form;
