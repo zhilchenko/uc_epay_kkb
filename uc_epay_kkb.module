@@ -116,14 +116,8 @@ function uc_epay_kkb_order($op, $arg1, $arg2) {
       // Fill template
       $template = str_replace(array_keys($data), $data, $template);
 
-      // Load merchant private key
-      $password = variable_get('uc_epay_kkb_private_key_pass', 'nissan');
-      if (!($prvkey = uc_epay_kkb_load_private_key(UC_EPAY_KKB_MERCH_CERT_FILENAME, $password))) {
-        return FALSE;
-      }
-
-      // Get signature and reverse it
-      $signature = strrev(uc_epay_kkb_sign($template, $prvkey));
+      // Get signature
+      $signature = uc_epay_kkb_sign($template);
 
       $sert_id = variable_get('uc_epay_kkb_merchant_certificate_id', '00C182B189');
       // Concat and encode signature string
@@ -250,12 +244,6 @@ function uc_epay_kkb_form($form_state, $order) {
   // Add leading zeroes to order id
   $order_id = sprintf("%06d", $order->order_id);
 
-  // Load merchant private key
-  $password = variable_get('uc_epay_kkb_private_key_pass', 'nissan');
-  if (!($prvkey = uc_epay_kkb_load_private_key(UC_EPAY_KKB_MERCH_CERT_FILENAME, $password))) {
-    return FALSE;
-  }
-
   // Define template with data required by payment gateway
   $template = '<merchant cert_id="[MERCHANT_CERTIFICATE_ID]" name="[MERCHANT_NAME]"><order order_id="[ORDER_ID]" amount="[AMOUNT]" currency="[CURRENCY]"><department merchant_id="[MERCHANT_ID]" amount="[AMOUNT]"/></order></merchant>';
 
@@ -270,8 +258,8 @@ function uc_epay_kkb_form($form_state, $order) {
   // Fill template
   $template = str_replace(array_keys($data), $data, $template);
 
-  // Get signature and reverse it
-  $signature = strrev(uc_epay_kkb_sign($template, $prvkey));
+  // Get signature
+  $signature = uc_epay_kkb_sign($template);
 
   // Concat and encode signature string
   $result_sign = '<merchant_sign type="RSA">'.base64_encode($signature).'</merchant_sign>';
@@ -465,10 +453,17 @@ function uc_epay_kkb_load_private_key($filename, $password = '') {
 /**
  * Signs data with private key.
  */
-function uc_epay_kkb_sign($str, $key) {
+function uc_epay_kkb_sign($str) {
+  // Load merchant private key
+  $password = variable_get('uc_epay_kkb_private_key_pass', 'nissan');
+  if (!($prvkey = uc_epay_kkb_load_private_key(UC_EPAY_KKB_MERCH_CERT_FILENAME, $password))) {
+    return FALSE;
+  }
+
   $signature = '';
-  openssl_sign($str, $signature, $key);
-  return $signature;
+  openssl_sign($str, $signature, $prvkey);
+  // Return reversed
+  return strrev($signature);
 }
 
 /**
