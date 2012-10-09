@@ -1,0 +1,223 @@
+# $Id$
+#
+# LANGUAGE translation of Drupal (general)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from files:
+#  test.php: n/a
+#  uc_epay_kkb.module: n/a
+#  uc_epay_kkb.info: n/a
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2012-10-09 11:23+0600\n"
+"PO-Revision-Date: 2012-10-09 11:33+0600\n"
+"Last-Translator: Zhilchenko Stanislav <zhilchenko@gmail.com>\n"
+"Language-Team: LANGUAGE <EMAIL@ADDRESS>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: uc_epay_kkb.module:34
+msgid "Credit card (epay.kkb.kz)"
+msgstr "Банковская карта (epay.kkb.kz)"
+
+#: uc_epay_kkb.module:35
+msgid "Credit card"
+msgstr "Банковская карта"
+
+#: uc_epay_kkb.module:36
+msgid "Redirect to epay.kkb.kz to pay by credit card."
+msgstr "Перенаправляет на epay.kkb.kz для оплаты банковской картой."
+
+#: uc_epay_kkb.module:147
+msgid "Payment approved by epay.kkb.kz."
+msgstr "Оплата подтверждена epay.kkb.kz."
+
+#: uc_epay_kkb.module:154;152
+msgid "Payment completing error. Bad response code (%code)."
+msgstr "Ошибка получения оплаты. Не верный код ответа (%code)."
+
+#: uc_epay_kkb.module:176
+msgid "URL"
+msgstr ""
+
+#: uc_epay_kkb.module:180
+msgid "Payment URL"
+msgstr "URL оплаты"
+
+#: uc_epay_kkb.module:181;188
+msgid "When you are ready to receive payments set URL to %live_url"
+msgstr "Когда будете готовы принимать платежи укажите %live_url"
+
+#: uc_epay_kkb.module:187
+msgid "Completing URL"
+msgstr "URL подтверждения"
+
+#: uc_epay_kkb.module:195
+msgid "Merchant information"
+msgstr "Информация о продавце"
+
+#: uc_epay_kkb.module:199
+msgid "Merchant ID"
+msgstr "ID продавца"
+
+#: uc_epay_kkb.module:205
+msgid "Merchant name"
+msgstr "Название продавца"
+
+#: uc_epay_kkb.module:211
+msgid "Certificate serial number"
+msgstr "Серийный номер сертификата"
+
+#: uc_epay_kkb.module:218
+msgid "Keys"
+msgstr "Ключи"
+
+#: uc_epay_kkb.module:222
+msgid "Merchant private key password"
+msgstr "Пароль приватного ключа продавца"
+
+#: uc_epay_kkb.module:229
+msgid "Payment completing"
+msgstr "Подтверждение платежа"
+
+#: uc_epay_kkb.module:238
+msgid "Completing order status"
+msgstr "Статус заказа для подтверждения платежа"
+
+#: uc_epay_kkb.module:241
+msgid "When order status will be equal to value of this element system make a payment completing request to gateway."
+msgstr "Когда статус заказа будет равен значению этого элемента система сделает запрос к шлюзу на подтверждение оплаты."
+
+#: uc_epay_kkb.module:312
+msgid "Proceed payment"
+msgstr "Перейти к оплате"
+
+#: uc_epay_kkb.module:368;366
+msgid "Payment receiving error for order %order_id. Bank signature don't match."
+msgstr "Ошибка получения оплаты для заказа %order_id. Подпись банка не совпадает."
+
+#: uc_epay_kkb.module:378;376
+msgid "Payment receiving error for order %order_id. Bad response code (%code)."
+msgstr "Ошибка получения оплаты для заказа %order_id. Не верный код ответа (%code)."
+
+#: uc_epay_kkb.module:397
+msgid "Customer used a different e-mail address during payment: %email"
+msgstr "Покупатель ввел другой адрес электронной почты при оплате: %email"
+
+#: uc_epay_kkb.module:407
+msgid "Paid by epay.kkb.kz."
+msgstr "Оплачено через epay.kkb.kz."
+
+#: uc_epay_kkb.module:543
+msgid "Shipping"
+msgstr "Доставка"
+
+#: uc_epay_kkb.module:670
+msgid "uc_epay_kkb was unable to create directory %directory. Please, create it by hand."
+msgstr "uc_epay_kkb не удалось создать каталог %directory. Пожалуйста, создайте его вручную."
+
+#: uc_epay_kkb.module:686
+msgid "Please create a .htaccess file in your %directory directory which contains the following lines: <code>%htaccess</code> or add them to the existing .htaccess file"
+msgstr "Пожалуйста создайте файл .htaccess в каталоге %directory со следующим содержимым: <code>%htaccess</code> или добавьте его в существующий файл"
+
+#: uc_epay_kkb.module:707
+msgid "uc_epay_kkb was unable to write a test text file to the destination directory %directory, and is therefore unable to check the security of it."
+msgstr "uc_epay_kkb не удалось записать тестовый текстовый файл в каталог %directory и поэтому невозможно проверить его безопасность."
+
+#: uc_epay_kkb.module:717
+msgid "uc_epay_kkb certificate directory is publicly accessible. Please secure the '%directory' directory"
+msgstr "uc_epay_kkb: каталог сертификата доступен для всех. Пожалуйста, обеспечте безопасность каталога %directory"
+
+#: uc_epay_kkb.module:152;366;376;386;391;457;492;499;744;749
+msgid "uc_epay_kkb"
+msgstr "uc_epay_kkb"
+
+#: uc_epay_kkb.module:386
+msgid "Receiving payment notification for order %order_id, but order not found."
+msgstr "Получение платежа для заказа %order_id, но заказ не найден."
+
+#: uc_epay_kkb.module:391
+msgid "Receiving payment notification for order %order_id."
+msgstr "Получение платежа для заказа %order_id."
+
+#: uc_epay_kkb.module:457
+msgid "Error private key loading: %error"
+msgstr "Ошибка загрузки приватного ключа:  %error"
+
+#: uc_epay_kkb.module:492
+msgid "Error public key loading: %error"
+msgstr "Ошибка загрузки публичного ключа: %error"
+
+#: uc_epay_kkb.module:499
+msgid "Error signature verifying: %error"
+msgstr "Ошибка подтверждения подписи: %error"
+
+#: uc_epay_kkb.module:744
+msgid "uc_epay_kkb was unable to find bank public key %cert. Please, place it in %dir."
+msgstr "uc_epay_kkb не удалось найти публичный ключ банка %cert. Пожалуйста, поместите его в %dir."
+
+#: uc_epay_kkb.module:749
+msgid "uc_epay_kkb was unable to find private merchant key %cert. Please, place it in %dir."
+msgstr "uc_epay_kkb не удалось найти приватный ключ продавца %cert. Пожалуйста, поместите его в %dir."
+
+#: uc_epay_kkb.module:53
+msgid "Order payment"
+msgstr "Оплата заказа"
+
+#: uc_epay_kkb.module:60
+msgid "Order complete"
+msgstr "Заказ завершен"
+
+#: (duplicate) uc_epay_kkb.install:17
+msgid "OpenSSL"
+msgstr ""
+
+#: (duplicate) uc_epay_kkb.install:18
+#: ;29
+msgid "Enabled"
+msgstr "Включено"
+
+#: (duplicate) uc_epay_kkb.install:18
+#: ;29
+msgid "Not found"
+msgstr "Не нейдено"
+
+#: (duplicate) uc_epay_kkb.install:22
+msgid "uc_epay_kkb requires <a href='!openssl_url'>OpenSSL</a>."
+msgstr "uc_epay_kkb требует <a href='!openssl_url'>OpenSSL</a>."
+
+#: (duplicate) uc_epay_kkb.install:28
+msgid "SimpleXML"
+msgstr ""
+
+#: (duplicate) uc_epay_kkb.install:33
+msgid "uc_epay_kkb requires <a href='!simplexml_url'>SimpleXML</a>."
+msgstr "uc_epay_kkb требует <a href='!simplexml_url'>SimpleXML</a>."
+
+#: uc_epay_kkb.info:0
+msgid "ePay from KKB"
+msgstr "ePay от ККБ"
+
+#: uc_epay_kkb.info:0
+msgid "Process payments using ePay.kkb.kz."
+msgstr "Прием платежей используя ePay.kkb.kz"
+
+#: uc_epay_kkb.info:0
+msgid "Ubercart - payment"
+msgstr "Ubercart - оплата"
+
+#: tmp/test.php:56
+msgid "Error public key loading: "
+msgstr "Ошибка загрузки публичного ключа:"
+
+#: tmp/test.php:64
+msgid "Error signature verifying: "
+msgstr "Ошибка подтверждения подписи:"
+
+#~ msgid "Gateway URL"
+#~ msgstr "URL шлюза"
+
