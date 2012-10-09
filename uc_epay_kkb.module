@@ -149,8 +149,9 @@ function uc_epay_kkb_order($op, $arg1, $arg2) {
         uc_order_comment_save($order->order_id, 0, $message, 'admin');
       }
       else {
+        watchdog('uc_epay_kkb','Payment completing error. Bad response code (%code).', 
+                  array('%code' => $response_code), WATCHDOG_ERROR);
         $message = t('Payment completing error. Bad response code (%code).', array('%code' => $response_code));
-        watchdog('uc_epay_kkb', $message, NULL, WATCHDOG_ERROR);
         uc_order_comment_save($order->order_id, 0, $message, 'admin');
         return FALSE;
       }
@@ -362,18 +363,20 @@ function uc_epay_kkb_postlink() {
   $raw_sign = uc_epay_kkb_split_sign($response_raw);
   $sign = strrev(base64_decode($raw_sign['RAWSIGN']));
   if (!uc_epay_kkb_check_sign($raw_sign['LETTER'], $sign)) {
+    watchdog('uc_epay_kkb', 'Payment receiving error for order %order_id. Bank signature don\'t match.',
+              array('%order_id' => $order_id), WATCHDOG_ERROR);
     $message = t('Payment receiving error for order %order_id. Bank signature don\'t match.',
                   array('%order_id' => $order_id));
-    watchdog('uc_epay_kkb', $message, NULL, WATCHDOG_ERROR);
     uc_order_comment_save($order_id, 0, $message, 'admin');
     return MENU_ACCESS_DENIED;
   }
 
   // Check bank response code (00 if success)
   if ($response_code = $payment_attr['response_code'] != '00') {
+    watchdog('uc_epay_kkb', 'Payment receiving error for order %order_id. Bad response code (%code).', 
+              array('%order_id' => $order_id, '%code' => $response_code), WATCHDOG_ERROR);
     $message = t('Payment receiving error for order %order_id. Bad response code (%code).', 
                   array('%order_id' => $order_id, '%code' => $response_code));
-    watchdog('uc_epay_kkb', $message, NULL, WATCHDOG_ERROR);
     uc_order_comment_save($order_id, 0, $message, 'admin');
     return MENU_ACCESS_DENIED;
   }
@@ -451,8 +454,8 @@ function uc_epay_kkb_load_private_key($filename, $password = '') {
     return $prvkey;
   }
   else {
-    $message = t("Error private key loading: %error", array('%error' => openssl_error_string()));
-    watchdog('uc_epay_kkb', $message, NULL, WATCHDOG_ERROR);
+    watchdog('uc_epay_kkb', 'Error private key loading: %error',
+              array('%error' => openssl_error_string()), WATCHDOG_ERROR);
   }
 
   return FALSE;
@@ -486,16 +489,14 @@ function uc_epay_kkb_check_sign($str, $sign, $filename = UC_EPAY_KKB_BANK_CERT_F
   $pubkey = openssl_get_publickey($c);
 
   if (!is_resource($pubkey)) {
-    $message = t("Error public key loading: %error", array('%error' => openssl_error_string()));
-    watchdog('uc_epay_kkb', $message, NULL, WATCHDOG_ERROR);
+    watchdog('uc_epay_kkb', 'Error public key loading: %error', array('%error' => openssl_error_string()), WATCHDOG_ERROR);
     return FALSE;
   }
 
   $result = openssl_verify($str, $sign, $pubkey);
 
   if ($result == -1) {
-    $message = t("Error signature verifying: %error", array('%error' => openssl_error_string()));
-    watchdog('uc_epay_kkb', $message, NULL, WATCHDOG_ERROR);
+    watchdog('uc_epay_kkb', 'Error signature verifying: %error', array('%error' => openssl_error_string()), WATCHDOG_ERROR);
     return FALSE;
   }
 
@@ -740,15 +741,13 @@ function uc_epay_kkb_test_file_readable_remotely($path, $contents) {
 function uc_epay_kkb_check_cert_files() {
   $result = TRUE;
   if (!file_exists(UC_EPAY_KKB_BANK_CERT_FILENAME)) {
-    $message = t("uc_epay_kkb was unable to find bank public key %cert. Please, place it in %dir.",
-                  array('%cert' => UC_EPAY_KKB_BANK_CERT_FILENAME, '%dir' => UC_EPAY_KKB_CERT_DIR));
-    watchdog('uc_epay_kkb', $message, NULL, WATCHDOG_ERROR);
+    watchdog('uc_epay_kkb', 'uc_epay_kkb was unable to find bank public key %cert. Please, place it in %dir.',
+              array('%cert' => UC_EPAY_KKB_BANK_CERT_FILENAME, '%dir' => UC_EPAY_KKB_CERT_DIR), WATCHDOG_ERROR);
     $result = FALSE;
   }
   if (!file_exists(UC_EPAY_KKB_MERCH_CERT_FILENAME)) {
-    $message = t("uc_epay_kkb was unable to find private merchant key %cert. Please, place it in %dir.",
-                  array('%cert' => UC_EPAY_KKB_MERCH_CERT_FILENAME, '%dir' => UC_EPAY_KKB_CERT_DIR));
-    watchdog('uc_epay_kkb', $message, NULL, WATCHDOG_ERROR);
+    watchdog('uc_epay_kkb', 'uc_epay_kkb was unable to find private merchant key %cert. Please, place it in %dir.',
+              array('%cert' => UC_EPAY_KKB_MERCH_CERT_FILENAME, '%dir' => UC_EPAY_KKB_CERT_DIR), WATCHDOG_ERROR);
     $result = FALSE;
   }
   return $result;
