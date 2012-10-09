@@ -6,6 +6,37 @@
  */
 
 /**
+ * Implements hook_requirements().
+ */
+function uc_epay_kkb_requirements($phase) {
+  $t = get_t();
+
+  $has_openssl = function_exists('openssl_sign');
+
+  $requirements['uc_epay_kkb_openssl'] = array(
+    'title' => $t('OpenSSL'),
+    'value' => $has_openssl ? $t('Enabled') : $t('Not found'),
+  );
+  if (!$has_openssl) {
+    $requirements['uc_epay_kkb_openssl']['severity'] = REQUIREMENT_ERROR;
+    $requirements['uc_epay_kkb_openssl']['description'] = $t("uc_epay_kkb requires <a href='!openssl_url'>OpenSSL</a>.", array('!openssl_url' => 'http://www.php.net/manual/en/openssl.installation.php'));
+  }
+
+  $has_simplexml = function_exists('simplexml_load_string');
+
+  $requirements['uc_epay_kkb_simplexml'] = array(
+    'title' => $t('SimpleXML'),
+    'value' => $has_simplexml ? $t('Enabled') : $t('Not found'),
+  );
+  if (!$has_simplexml) {
+    $requirements['uc_epay_kkb_simplexml']['severity'] = REQUIREMENT_ERROR;
+    $requirements['uc_epay_kkb_simplexml']['description'] = $t("uc_epay_kkb requires <a href='!simplexml_url'>SimpleXML</a>.", array('!simplexml_url' => 'http://www.php.net/manual/en/simplexml.installation.php'));
+  }
+
+  return $requirements;
+}
+
+/**
  * Implementation of hook_install().
  */
 function uc_epay_kkb_install() {
