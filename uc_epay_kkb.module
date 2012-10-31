@@ -351,7 +351,7 @@ function uc_epay_kkb_postlink() {
     return MENU_ACCESS_DENIED;
   }
 
-  $response_raw = filter_xss($_POST['response']);
+  $response_raw = $_POST['response'];
 
   // Create SimpleXML object from response data
   $response = simplexml_load_string($response_raw);
